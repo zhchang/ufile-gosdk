@@ -119,8 +119,9 @@ func (u *UFileRequest) PostFile(filePath, keyName, mimeType string) (err error) 
 }
 
 //PutBytes upload bytes instead of reading file from os.
-func (u *UFileRequest) PutBytes(bytes []byte, keyName, mimeType string) error {
-	req, err := http.NewRequest("PUT", reqURL, bytes.NewBuffer(bytes))
+func (u *UFileRequest) PutBytes(b []byte, keyName, mimeType string) error {
+	reqURL := u.genFileURL(keyName)
+	req, err := http.NewRequest("PUT", reqURL, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
@@ -136,13 +137,13 @@ func (u *UFileRequest) PutBytes(bytes []byte, keyName, mimeType string) error {
 	}
 
 	if u.verifyUploadMD5 {
-		md5Str := fmt.Sprintf("%x", md5.Sum(bytes))
+		md5Str := fmt.Sprintf("%x", md5.Sum(b))
 		req.Header.Add("Content-MD5", md5Str)
 	}
 
 	authorization := u.Auth.Authorization("PUT", u.BucketName, keyName, req.Header)
 	req.Header.Add("authorization", authorization)
-	fileSize := len(bytes)
+	fileSize := int64(len(b))
 	req.Header.Add("Content-Length", strconv.FormatInt(fileSize, 10))
 
 	return u.request(req)
